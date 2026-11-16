@@ -29,7 +29,7 @@ interface NseEquityRow {
 }
 
 interface NseEquityResponse {
-  data?: NseEquityRow[];
+  data?: { data?: NseEquityRow[] };
 }
 
 function parseRow(row: NseEquityRow): NseStock {
@@ -54,10 +54,10 @@ function parseRow(row: NseEquityRow): NseStock {
 export async function getTopGainers(args: TopGainersArgs = {}): Promise<NseStock[]> {
   const index = args.index ?? "NIFTY 500";
   const limit = Math.max(1, args.limit ?? 10);
-  const path = `/api/equity-stockIndices?index=${encodeURIComponent(index)}`;
+  const path = `/api/NextApi/apiClient/marketWatchApi?functionName=getIndicesData&symbol=${encodeURIComponent(index)}`;
 
   const resp = await fetchNSE<NseEquityResponse>(path, { ttlMs: 60_000 });
-  const stocks = (resp.data ?? [])
+  const stocks = (resp.data?.data ?? [])
     .filter((r) => (r.symbol ?? "").trim() !== index)
     .map(parseRow);
 

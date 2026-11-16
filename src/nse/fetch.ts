@@ -1,18 +1,19 @@
 import { fetchHttp, type SourceConfig } from "../http.js";
 import { cacheGet, cacheSet } from "../cache.js";
-import { getSessionCookies, invalidateSession, NSE_USER_AGENT } from "./session.js";
 
 const NSE_BASE = "https://www.nseindia.com";
 const DEFAULT_TTL_MS = 5 * 60 * 1000;
+const USER_AGENT =
+  process.env.NSE_MCP_UA ??
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 const NSE_CONFIG: SourceConfig = {
   name: "NSE India",
-  userAgent: NSE_USER_AGENT,
+  userAgent: USER_AGENT,
   defaultTtlMs: DEFAULT_TTL_MS,
   defaultAccept: "application/json, text/plain, */*",
   minIntervalMs: 350,
   timeoutMs: 30_000,
-  // 401/403 can mean the session expired — handled below with retry.
   defaultNullStatuses: [],
 };
 
@@ -31,30 +32,15 @@ export async function fetchNSE<T>(path: string, options: NseFetchOptions = {}): 
     if (cached !== undefined) return cached;
   }
 
-  const doRequest = async (): Promise<string> => {
-    const cookies = await getSessionCookies();
-    const url = `${NSE_BASE}${path}`;
-    const text = await fetchHttp(url, NSE_CONFIG, {
-      cache: false,
-      headers: {
-        Cookie: cookies,
-        Referer: NSE_BASE,
-        "X-Requested-With": "XMLHttpRequest",
-        "Accept-Language": "en-US,en;q=0.9",
-      },
-    });
-    if (text === null) throw new Error(`NSE API: no response for ${path}`);
-    return text;
-  };
-
-  let text: string;
-  try {
-    text = await doRequest();
-  } catch (err) {
-    // On first failure, invalidate session and retry once.
-    invalidateSession();
-    text = await doRequest();
-  }
+  const text = await fetchHttp(`${NSE_BASE}${path}`, NSE_CONFIG, {
+    cache: false,
+    headers: {
+      Referer: NSE_BASE,
+      "X-Requested-With": "XMLHttpRequest",
+      "Accept-Language": "en-US,en;q=0.9",
+    },
+  });
+  if (text === null) throw new Error(`NSE API: no response for ${path}`);
 
   let data: T;
   try {

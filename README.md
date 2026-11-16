@@ -89,12 +89,9 @@ $env:NSE_MCP_UA = "Mozilla/5.0 ..."
 
 You can also set it inline in your MCP client config (see below).
 
-### How NSE session auth works
+### NSE API access
 
-NSE India's API requires browser-like cookies. On the first request the server automatically:
-1. Fetches `https://www.nseindia.com` to obtain initial cookies.
-2. Fetches the live-equity-market page with those cookies to complete the session.
-3. Caches the session for ~7 minutes, then refreshes transparently.
+The server calls NSE's public JSON endpoints directly with browser-like request headers. It does not send session cookies or require a user login.
 
 No manual login or API key is needed.
 
@@ -381,8 +378,7 @@ src/
 ├── cache.ts          # In-memory TTL cache
 ├── http.ts           # Rate-paced HTTP fetcher with retry
 ├── nse/
-│   ├── session.ts    # NSE cookie session management
-│   └── fetch.ts      # NSE API client (wraps http.ts + session)
+│   └── fetch.ts      # NSE API client (wraps http.ts)
 ├── yahoo/
 │   ├── fetch.ts      # Yahoo Finance HTTP config
 │   ├── parseQuote.ts # Quote JSON parser
